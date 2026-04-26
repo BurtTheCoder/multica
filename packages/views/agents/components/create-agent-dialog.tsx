@@ -29,6 +29,75 @@ import { Input } from "@multica/ui/components/ui/input";
 import { Label } from "@multica/ui/components/ui/label";
 import { toast } from "sonner";
 
+interface AgentTemplate {
+  id: string;
+  label: string;
+  emoji: string;
+  defaultName: string;
+  defaultDescription: string;
+  instructions: string;
+}
+
+const AGENT_TEMPLATES: readonly AgentTemplate[] = [
+  {
+    id: "coding",
+    label: "Coding",
+    emoji: "⌘",
+    defaultName: "Coding Agent",
+    defaultDescription: "Writes, refactors, and ships code",
+    instructions:
+      "You are a Coding Agent on a product team. Pick up coding issues — implement features, fix bugs, write tests, and open pull requests. Read the repository before you start, follow existing code conventions, and keep diffs focused. Ask for clarification when the acceptance criteria are ambiguous.",
+  },
+  {
+    id: "review",
+    label: "Review",
+    emoji: "✓",
+    defaultName: "Review Agent",
+    defaultDescription: "Reviews completed work and approves or requests changes",
+    instructions: [
+      "You are a code review agent. When assigned an issue in 'In Review' status, you review the work that was done.",
+      "",
+      "## Review Process",
+      "1. Read the issue description to understand what was requested",
+      "2. Read the agent's comments and work output in the activity thread",
+      "3. If the issue references code changes (PRs, files, diffs), review them for correctness",
+      "4. Evaluate: does the work satisfy the issue requirements?",
+      "",
+      "## Decision",
+      "- If the work **passes review**: move the issue to **Done** and leave a short comment summarizing what was reviewed and why it passes",
+      "- If the work **needs changes**: move the issue back to **Todo** and leave a detailed comment explaining what needs to be fixed",
+      "",
+      "## Review Criteria",
+      "- Does the output match what was asked?",
+      "- Are there obvious errors, missing pieces, or quality issues?",
+      "- Is the work complete or only partially done?",
+      "",
+      "## Style",
+      "- Be concise — 2-4 sentences per review",
+      "- Be specific about what passed or what needs fixing",
+      "- Don't re-do the work, just evaluate it",
+    ].join("\n"),
+  },
+  {
+    id: "planning",
+    label: "Planning",
+    emoji: "◐",
+    defaultName: "Planning Agent",
+    defaultDescription: "Breaks down work, drafts specs, keeps the board tidy",
+    instructions:
+      "You are a Planning Agent. Turn loose ideas and open issues into scoped, ready-to-execute work: break them down into subtasks, write acceptance criteria, and propose owners and sequencing. Prefer clarity over speed. When blocked by missing context, ask one specific question rather than guessing.",
+  },
+  {
+    id: "writing",
+    label: "Writing",
+    emoji: "✎",
+    defaultName: "Writing Agent",
+    defaultDescription: "Drafts, summarizes, and researches long-form content",
+    instructions:
+      "You are a Writing Agent. Draft documents, summarize long content, and research topics on the web when needed. Structure your output as finished prose a reader can use directly — not an outline. Cite sources when you draw from them. Match the tone the user establishes in the issue.",
+  },
+];
+
 type RuntimeFilter = "mine" | "all";
 
 export function CreateAgentDialog({
@@ -48,9 +117,18 @@ export function CreateAgentDialog({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<AgentVisibility>("private");
   const [model, setModel] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const applyTemplate = (template: AgentTemplate) => {
+    setSelectedTemplate(template.id);
+    setName(template.defaultName);
+    setDescription(template.defaultDescription);
+    setInstructions(template.instructions);
+  };
   const [runtimeOpen, setRuntimeOpen] = useState(false);
   const [runtimeFilter, setRuntimeFilter] = useState<RuntimeFilter>("mine");
 
@@ -89,6 +167,7 @@ export function CreateAgentDialog({
       await onCreate({
         name: name.trim(),
         description: description.trim(),
+        instructions: instructions.trim() || undefined,
         runtime_id: selectedRuntime.id,
         visibility,
         model: model.trim() || undefined,
@@ -111,6 +190,27 @@ export function CreateAgentDialog({
         </DialogHeader>
 
         <div className="space-y-4 min-w-0">
+          <div>
+            <Label className="text-xs text-muted-foreground">Start from a template</Label>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {AGENT_TEMPLATES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => applyTemplate(t)}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    selectedTemplate === t.id
+                      ? "border-primary bg-primary/5 text-foreground"
+                      : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span>{t.emoji}</span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <Label className="text-xs text-muted-foreground">Name</Label>
             <Input
