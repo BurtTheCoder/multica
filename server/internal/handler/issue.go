@@ -1152,6 +1152,40 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 	}
 
+	// Auto-assign review agent when an agent moves an issue to in_review.
+	// Only triggers when the actor is an agent (the one that completed work),
+	// preventing loops where the review agent re-triggers itself.
+	if statusChanged && issue.Status == "in_review" && actorType == "agent" {
+		ws, wsErr := h.Queries.GetWorkspace(r.Context(), issue.WorkspaceID)
+		if wsErr == nil {
+			var wsSettings map[string]any
+			if ws.Settings != nil {
+				json.Unmarshal(ws.Settings, &wsSettings)
+			}
+			if rid, ok := wsSettings["review_agent_id"].(string); ok && rid != "" {
+				reviewAgentUUID := parseUUID(rid)
+				// Don't reassign to the same agent that just completed the work.
+				if uuidToString(reviewAgentUUID) != uuidToString(issue.AssigneeID) {
+					updatedIssue, updateErr := h.Queries.UpdateIssue(r.Context(), db.UpdateIssueParams{
+						ID:           issue.ID,
+						AssigneeType: pgtype.Text{String: "agent", Valid: true},
+						AssigneeID:   reviewAgentUUID,
+					})
+					if updateErr == nil {
+						h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
+						if h.isAgentAssigneeReady(r.Context(), updatedIssue) {
+							h.TaskService.EnqueueTaskForIssue(r.Context(), updatedIssue)
+						}
+						slog.Info("review agent auto-assigned",
+							"issue_id", uuidToString(issue.ID),
+							"review_agent_id", rid,
+							"workspace_id", uuidToString(issue.WorkspaceID))
+					}
+				}
+			}
+		}
+	}
+
 	writeJSON(w, http.StatusOK, resp)
 }
 

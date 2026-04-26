@@ -17,12 +17,20 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@multica/ui/components/ui/alert-dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@multica/ui/components/ui/select";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@multica/core/auth";
 import { useLeaveWorkspace, useDeleteWorkspace } from "@multica/core/workspace/mutations";
 import { useWorkspaceId } from "@multica/core/hooks";
 import {
+  agentListOptions,
   memberListOptions,
   workspaceKeys,
   workspaceListOptions,
@@ -106,6 +114,15 @@ export function WorkspaceTab() {
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const { data: agents = [] } = useQuery(agentListOptions(wsId));
+  const activeAgents = agents.filter((a) => !a.archived_at);
+  const [reviewAgentId, setReviewAgentId] = useState<string>("");
+
+  useEffect(() => {
+    const settings = (workspace as any)?.settings as Record<string, any> | undefined;
+    setReviewAgentId(settings?.review_agent_id ?? "");
+  }, [workspace]);
+
   const currentMember = members.find((m) => m.user_id === user?.id) ?? null;
   const canManageWorkspace = currentMember?.role === "owner" || currentMember?.role === "admin";
   const isOwner = currentMember?.role === "owner";
@@ -138,6 +155,28 @@ export function WorkspaceTab() {
       toast.success("Workspace settings saved");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save workspace settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveReviewAgent = async () => {
+    if (!workspace) return;
+    setSaving(true);
+    try {
+      const currentSettings = ((workspace as any)?.settings as Record<string, any>) ?? {};
+      const updated = await api.updateWorkspace(workspace.id, {
+        settings: {
+          ...currentSettings,
+          review_agent_id: reviewAgentId || null,
+        },
+      });
+      qc.setQueryData(workspaceKeys.list(), (old: Workspace[] | undefined) =>
+        old?.map((ws) => (ws.id === updated.id ? updated : ws)),
+      );
+      toast.success("Review agent setting saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save setting");
     } finally {
       setSaving(false);
     }
@@ -248,6 +287,42 @@ export function WorkspaceTab() {
             )}
           </CardContent>
         </Card>
+      </section>
+
+      {/* Review Agent */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold">Review Agent</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Automatically assign issues to this agent when they move to &quot;In Review&quot;.
+          </p>
+        </div>
+        <div className="flex items-end gap-3">
+          <div className="flex-1 space-y-1.5">
+            <Label htmlFor="review-agent">Agent</Label>
+            <Select value={reviewAgentId} onValueChange={(v) => setReviewAgentId(v ?? "")}>
+              <SelectTrigger id="review-agent">
+                <SelectValue placeholder="None (manual review)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None (manual review)</SelectItem>
+                {activeAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleSaveReviewAgent}
+            disabled={saving}
+          >
+            <Save className="h-3.5 w-3.5 mr-1" />
+            Save
+          </Button>
+        </div>
       </section>
 
       {/* Danger Zone — gated on the member query settling so the owner-only
