@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ChevronRight, ListTodo } from "lucide-react";
 import type { IssueStatus } from "@multica/core/types";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 import { useIssueViewStore, useClearFiltersOnWorkspaceChange } from "@multica/core/issues/stores/view-store";
 import { useIssuesScopeStore } from "@multica/core/issues/stores/issues-scope-store";
@@ -29,7 +30,9 @@ export function IssuesPage() {
 
   const workspace = useCurrentWorkspace();
   const scope = useIssuesScopeStore((s) => s.scope);
-  const viewMode = useIssueViewStore((s) => s.viewMode);
+  const isMobile = useIsMobile();
+  const storedViewMode = useIssueViewStore((s) => s.viewMode);
+  const viewMode = isMobile ? "list" : storedViewMode;
   const statusFilters = useIssueViewStore((s) => s.statusFilters);
   const priorityFilters = useIssueViewStore((s) => s.priorityFilters);
   const assigneeFilters = useIssueViewStore((s) => s.assigneeFilters);

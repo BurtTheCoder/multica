@@ -699,14 +699,14 @@ export function IssuesHeader({ scopedIssues }: { scopedIssues: Issue[] }) {
           </PopoverContent>
         </Popover>
 
-        {/* View toggle */}
+        {/* View toggle (hidden on mobile — always list view) */}
         <DropdownMenu>
           <Tooltip>
             <DropdownMenuTrigger
               render={
                 <TooltipTrigger
                   render={
-                    <Button variant="outline" size="icon-sm" className="text-muted-foreground">
+                    <Button variant="outline" size="icon-sm" className="text-muted-foreground hidden md:inline-flex">
                       {viewMode === "board" ? (
                         <Columns3 className="size-4" />
                       ) : (
