@@ -91,7 +91,7 @@ export function AppearanceTab() {
     <div className="space-y-8">
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">Theme</h2>
-        <div className="flex gap-6" role="radiogroup" aria-label="Theme">
+        <div className="flex flex-wrap gap-4 sm:gap-6" role="radiogroup" aria-label="Theme">
           {themeOptions.map((opt) => {
             const active = theme === opt.value;
             return (
@@ -101,11 +101,11 @@ export function AppearanceTab() {
                 aria-checked={active}
                 aria-label={`Select ${opt.label} theme`}
                 onClick={() => setTheme(opt.value)}
-                className="group flex flex-col items-center gap-2"
+                className="group flex flex-1 min-w-0 flex-col items-center gap-2"
               >
                 <div
                   className={cn(
-                    "aspect-[4/3] w-36 overflow-hidden rounded-lg ring-1 transition-all",
+                    "aspect-[4/3] w-full sm:w-36 overflow-hidden rounded-lg ring-1 transition-all",
                     active
                       ? "ring-2 ring-brand"
                       : "ring-border hover:ring-2 hover:ring-border"

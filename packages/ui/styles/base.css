@@ -103,6 +103,7 @@
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    -webkit-tap-highlight-color: transparent;
   }
   *::-webkit-scrollbar { width: 6px; height: 6px; }
   *::-webkit-scrollbar-track { background: var(--scrollbar-track); }
@@ -110,6 +111,9 @@
   *::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
   body {
     @apply bg-background text-foreground;
+    touch-action: manipulation;
+    overscroll-behavior: contain;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   html {
     @apply font-sans;
@@ -117,5 +121,17 @@
      * Native CSS text-autospace (Chrome 119+, Electron recent versions).
      * Progressive enhancement: browsers that don't support it simply ignore the rule. */
     text-autospace: ideograph-alpha ideograph-numeric;
+  }
+  button, a, [role="button"], [role="tab"], [role="menuitem"],
+  [role="option"], [data-sidebar="menu-button"], summary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  @media (pointer: fine) {
+    button, a, [role="button"], [role="tab"], [role="menuitem"],
+    [role="option"], [data-sidebar="menu-button"], summary {
+      min-height: unset;
+      min-width: unset;
+    }
   }
 }

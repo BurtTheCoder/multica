@@ -3,6 +3,7 @@
 import React from "react";
 import { User, Palette, Key, Settings, Users, FolderGit2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@multica/ui/components/ui/tabs";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
 import { useCurrentWorkspace } from "@multica/core/paths";
 import { AccountTab } from "./account-tab";
 import { AppearanceTab } from "./appearance-tab";
@@ -37,6 +38,52 @@ interface SettingsPageProps {
 
 export function SettingsPage({ extraAccountTabs }: SettingsPageProps = {}) {
   const workspaceName = useCurrentWorkspace()?.name;
+  const isMobile = useIsMobile();
+
+  const allTabs = [
+    ...accountTabs,
+    ...(extraAccountTabs ?? []),
+    ...workspaceTabs,
+  ];
+
+  const tabContent = (
+    <>
+      <TabsContent value="profile"><AccountTab /></TabsContent>
+      <TabsContent value="appearance"><AppearanceTab /></TabsContent>
+      <TabsContent value="tokens"><TokensTab /></TabsContent>
+      <TabsContent value="workspace"><WorkspaceTab /></TabsContent>
+      <TabsContent value="repositories"><RepositoriesTab /></TabsContent>
+      <TabsContent value="members"><MembersTab /></TabsContent>
+      {extraAccountTabs?.map((tab) => (
+        <TabsContent key={tab.value} value={tab.value}>{tab.content}</TabsContent>
+      ))}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Tabs defaultValue="profile" className="flex flex-1 flex-col min-h-0 gap-0">
+        <div className="relative shrink-0 border-b">
+          <div className="overflow-x-auto px-2 pt-2">
+            <TabsList variant="line" className="w-max">
+              {allTabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5 px-3">
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="w-full p-4">
+            {tabContent}
+          </div>
+        </div>
+      </Tabs>
+    );
+  }
 
   return (
     <Tabs defaultValue="profile" orientation="vertical" className="flex-1 min-h-0 gap-0">
@@ -77,15 +124,7 @@ export function SettingsPage({ extraAccountTabs }: SettingsPageProps = {}) {
       {/* Right content */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         <div className="w-full max-w-3xl mx-auto p-6">
-          <TabsContent value="profile"><AccountTab /></TabsContent>
-          <TabsContent value="appearance"><AppearanceTab /></TabsContent>
-          <TabsContent value="tokens"><TokensTab /></TabsContent>
-          <TabsContent value="workspace"><WorkspaceTab /></TabsContent>
-          <TabsContent value="repositories"><RepositoriesTab /></TabsContent>
-          <TabsContent value="members"><MembersTab /></TabsContent>
-          {extraAccountTabs?.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value}>{tab.content}</TabsContent>
-          ))}
+          {tabContent}
         </div>
       </div>
     </Tabs>

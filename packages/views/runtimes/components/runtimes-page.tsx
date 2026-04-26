@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Server } from "lucide-react";
+import { ChevronLeft, Server } from "lucide-react";
 import { useDefaultLayout } from "react-resizable-panels";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,6 +9,8 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@multica/ui/components/ui/resizable";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
+import { Button } from "@multica/ui/components/ui/button";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
@@ -43,6 +45,7 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
   const ownerParam = filter === "mine" ? "me" as const : undefined;
   const { data: runtimes = [], isLoading: fetching } = useQuery(runtimeListOptions(wsId, ownerParam));
 
+  const isMobile = useIsMobile();
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "multica_runtimes_layout",
   });
@@ -97,6 +100,56 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
     );
   }
 
+  const listContent = (
+    <RuntimeList
+      runtimes={runtimes}
+      selectedId={effectiveSelectedId}
+      onSelect={setSelectedId}
+      filter={filter}
+      onFilterChange={setFilter}
+      ownerFilter={ownerFilter}
+      onOwnerFilterChange={setOwnerFilter}
+      updatableIds={updatableIds}
+      bootstrapping={bootstrapping}
+    />
+  );
+
+  const detailContent = selected ? (
+    <RuntimeDetail key={selected.id} runtime={selected} />
+  ) : (
+    <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
+      <Server className="h-10 w-10 text-muted-foreground/30" />
+      <p className="mt-3 text-sm">Select a runtime to view details</p>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-1 min-h-0 flex-col">
+        {topSlot}
+        {!selected ? (
+          listContent
+        ) : (
+          <div className="flex flex-1 flex-col min-h-0">
+            <div className="flex h-12 shrink-0 items-center border-b px-4">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setSelectedId("")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <h1 className="text-sm font-semibold ml-2 truncate">{selected.name}</h1>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {detailContent}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 min-h-0 flex-col">
       {topSlot}
@@ -113,30 +166,13 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
           maxSize={400}
           groupResizeBehavior="preserve-pixel-size"
         >
-          <RuntimeList
-            runtimes={runtimes}
-            selectedId={effectiveSelectedId}
-            onSelect={setSelectedId}
-            filter={filter}
-            onFilterChange={setFilter}
-            ownerFilter={ownerFilter}
-            onOwnerFilterChange={setOwnerFilter}
-            updatableIds={updatableIds}
-            bootstrapping={bootstrapping}
-          />
+          {listContent}
         </ResizablePanel>
 
         <ResizableHandle />
 
         <ResizablePanel id="detail" minSize="50%">
-          {selected ? (
-            <RuntimeDetail key={selected.id} runtime={selected} />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-              <Server className="h-10 w-10 text-muted-foreground/30" />
-              <p className="mt-3 text-sm">Select a runtime to view details</p>
-            </div>
-          )}
+          {detailContent}
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

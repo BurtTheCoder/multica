@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Plus, FolderKanban, UserMinus, Check } from "lucide-react";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 import { projectListOptions } from "@multica/core/projects/queries";
 import { useUpdateProject } from "@multica/core/projects/mutations";
@@ -70,6 +71,65 @@ function ProjectRow({ project }: { project: Project }) {
     [project.id, updateProject],
   );
 
+  const isMobile = useIsMobile();
+
+  const statusBadge = (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button type="button" className={cn(
+            "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
+            isMobile ? "w-auto" : "w-28 justify-center",
+            statusCfg.badgeBg, statusCfg.badgeText,
+          )}>
+            {statusCfg.label}
+          </button>
+        }
+      />
+      <DropdownMenuContent align="start" className="w-44">
+        {PROJECT_STATUS_ORDER.map((s) => (
+          <DropdownMenuItem key={s} onClick={() => handleUpdate({ status: s as ProjectStatus })}>
+            <span className={cn("size-2 rounded-full", PROJECT_STATUS_CONFIG[s].dotColor)} />
+            <span>{PROJECT_STATUS_CONFIG[s].label}</span>
+            {s === project.status && <Check className="ml-auto h-3.5 w-3.5" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const progressBar = project.issue_count > 0 ? (
+    <span className="flex items-center gap-1.5 shrink-0">
+      <span className="relative h-1.5 w-12 rounded-full bg-muted overflow-hidden">
+        <span
+          className="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all"
+          style={{ width: `${Math.round((project.done_count / project.issue_count) * 100)}%` }}
+        />
+      </span>
+      <span className="text-xs text-muted-foreground tabular-nums">
+        {project.done_count}/{project.issue_count}
+      </span>
+    </span>
+  ) : null;
+
+  if (isMobile) {
+    return (
+      <AppLink
+        href={wsPaths.projectDetail(project.id)}
+        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/40"
+      >
+        <span className="text-base shrink-0">{project.icon || "📁"}</span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium">{project.title}</div>
+          <div className="flex items-center gap-2 mt-1">
+            {statusBadge}
+            {progressBar}
+          </div>
+        </div>
+      </AppLink>
+    );
+  }
+
   return (
     <div className="group/row flex h-11 items-center gap-2 px-5 text-sm transition-colors hover:bg-accent/40">
       {/* Icon + Name (navigates to detail) */}
@@ -103,45 +163,11 @@ function ProjectRow({ project }: { project: Project }) {
       </DropdownMenu>
 
       {/* Status — dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <button type="button" className={cn(
-              "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium shrink-0 w-28 justify-center cursor-pointer hover:opacity-80 transition-opacity",
-              statusCfg.badgeBg, statusCfg.badgeText,
-            )}>
-              {statusCfg.label}
-            </button>
-          }
-        />
-        <DropdownMenuContent align="start" className="w-44">
-          {PROJECT_STATUS_ORDER.map((s) => (
-            <DropdownMenuItem key={s} onClick={() => handleUpdate({ status: s as ProjectStatus })}>
-              <span className={cn("size-2 rounded-full", PROJECT_STATUS_CONFIG[s].dotColor)} />
-              <span>{PROJECT_STATUS_CONFIG[s].label}</span>
-              {s === project.status && <Check className="ml-auto h-3.5 w-3.5" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {statusBadge}
 
       {/* Progress (read-only) */}
       <span className="flex w-24 items-center justify-center gap-1.5 shrink-0">
-        {project.issue_count > 0 ? (
-          <>
-            <span className="relative h-1.5 w-12 rounded-full bg-muted overflow-hidden">
-              <span
-                className="absolute inset-y-0 left-0 rounded-full bg-emerald-500 transition-all"
-                style={{ width: `${Math.round((project.done_count / project.issue_count) * 100)}%` }}
-              />
-            </span>
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {project.done_count}/{project.issue_count}
-            </span>
-          </>
-        ) : (
-          <span className="text-xs text-muted-foreground">--</span>
-        )}
+        {progressBar ?? <span className="text-xs text-muted-foreground">--</span>}
       </span>
 
       {/* Lead — popover */}
@@ -229,6 +255,7 @@ function ProjectRow({ project }: { project: Project }) {
 
 export function ProjectsPage() {
   const wsId = useWorkspaceId();
+  const isMobile = useIsMobile();
   const { data: projects = [], isLoading } = useQuery(projectListOptions(wsId));
   const openCreateProject = () => useModalStore.getState().open("create-project");
 
@@ -278,17 +305,19 @@ export function ProjectsPage() {
           </div>
         ) : (
           <>
-            {/* Column headers */}
-            <div className="sticky top-0 z-[1] flex h-8 items-center gap-2 border-b bg-muted/30 px-5 text-xs font-medium text-muted-foreground">
-              {/* Icon spacer + Name */}
-              <span className="shrink-0 w-[24px]" />
-              <span className="min-w-0 flex-1">Name</span>
-              <span className="w-24 text-center shrink-0">Priority</span>
-              <span className="w-28 text-center shrink-0">Status</span>
-              <span className="w-24 text-center shrink-0">Progress</span>
-              <span className="w-10 text-center shrink-0">Lead</span>
-              <span className="w-20 text-right shrink-0">Created</span>
-            </div>
+            {/* Column headers (desktop only) */}
+            {!isMobile && (
+              <div className="sticky top-0 z-[1] flex h-8 items-center gap-2 border-b bg-muted/30 px-5 text-xs font-medium text-muted-foreground">
+                {/* Icon spacer + Name */}
+                <span className="shrink-0 w-[24px]" />
+                <span className="min-w-0 flex-1">Name</span>
+                <span className="w-24 text-center shrink-0">Priority</span>
+                <span className="w-28 text-center shrink-0">Status</span>
+                <span className="w-24 text-center shrink-0">Progress</span>
+                <span className="w-10 text-center shrink-0">Lead</span>
+                <span className="w-20 text-right shrink-0">Created</span>
+              </div>
+            )}
             {/* Rows */}
             {projects.map((project) => (
               <ProjectRow key={project.id} project={project} />
