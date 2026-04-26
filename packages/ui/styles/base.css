@@ -122,16 +122,19 @@
      * Progressive enhancement: browsers that don't support it simply ignore the rule. */
     text-autospace: ideograph-alpha ideograph-numeric;
   }
-  button, a, [role="button"], [role="tab"], [role="menuitem"],
-  [role="option"], [data-sidebar="menu-button"], summary {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  @media (pointer: fine) {
+  @media (pointer: coarse) {
     button, a, [role="button"], [role="tab"], [role="menuitem"],
-    [role="option"], [data-sidebar="menu-button"], summary {
-      min-height: unset;
-      min-width: unset;
+    [role="option"], summary {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    [data-sidebar="menu-button"] {
+      min-height: 44px !important;
+      height: auto !important;
+    }
+    [data-sidebar="menu-sub-button"] {
+      min-height: 40px !important;
+      height: auto !important;
     }
   }
 }
