@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import { Bot, ChevronLeft, Plus, Archive } from "lucide-react";
 import type { CreateAgentRequest, UpdateAgentRequest } from "@multica/core/types";
@@ -30,6 +30,7 @@ export function AgentsPage() {
   const wsId = useWorkspaceId();
   const { data: agents = [], isLoading } = useQuery(agentListOptions(wsId));
   const [selectedId, setSelectedId] = useState<string>("");
+  const userClearedRef = useRef(false);
   const [showArchived, setShowArchived] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const { data: runtimes = [], isLoading: runtimesLoading } = useQuery(runtimeListOptions(wsId));
@@ -45,8 +46,10 @@ export function AgentsPage() {
 
   const archivedCount = useMemo(() => agents.filter((a) => !!a.archived_at).length, [agents]);
 
-  // Select first agent on initial load or when filter changes
+  // Select first agent on initial load or when filter changes.
+  // Skip auto-select when the user explicitly cleared (back button on mobile).
   useEffect(() => {
+    if (userClearedRef.current) return;
     if (filteredAgents.length > 0 && !filteredAgents.some((a) => a.id === selectedId)) {
       setSelectedId(filteredAgents[0]!.id);
     }
@@ -141,7 +144,7 @@ export function AgentsPage() {
             <Button
               variant={showArchived ? "secondary" : "ghost"}
               size="icon-sm"
-              onClick={() => setShowArchived(!showArchived)}
+              onClick={() => { userClearedRef.current = false; setShowArchived(!showArchived); }}
               title={showArchived ? "Show active agents" : "Show archived agents"}
             >
               <Archive className="text-muted-foreground" />
@@ -180,7 +183,7 @@ export function AgentsPage() {
               key={agent.id}
               agent={agent}
               isSelected={agent.id === selectedId}
-              onClick={() => setSelectedId(agent.id)}
+              onClick={() => { userClearedRef.current = false; setSelectedId(agent.id); }}
             />
           ))}
         </div>
@@ -236,7 +239,7 @@ export function AgentsPage() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => setSelectedId("")}
+                onClick={() => { userClearedRef.current = true; setSelectedId(""); }}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>

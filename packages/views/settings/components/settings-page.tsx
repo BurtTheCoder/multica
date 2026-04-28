@@ -74,7 +74,7 @@ export function SettingsPage({ extraAccountTabs }: SettingsPageProps = {}) {
               ))}
             </TabsList>
           </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent" />
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="w-full p-4">

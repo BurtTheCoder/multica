@@ -125,15 +125,31 @@
   @media (pointer: coarse) {
     button, a, [role="button"], [role="tab"], [role="menuitem"],
     [role="option"], summary {
-      min-height: 44px;
-      min-width: 44px;
+      min-height: 44px !important;
+      min-width: 44px !important;
     }
+    /* Sidebar buttons — override fixed h-* from Tailwind */
     [data-sidebar="menu-button"] {
       min-height: 44px !important;
       height: auto !important;
     }
     [data-sidebar="menu-sub-button"] {
       min-height: 40px !important;
+      height: auto !important;
+    }
+    /* Tabs — h-7/h-8 utilities cap the height; release it so min-height wins */
+    [role="tab"] {
+      height: auto !important;
+    }
+    /* Icon-only buttons (size-6/size-7/size-8) — Tailwind size-* sets both
+       width and height which cap the element. Release them so min-* wins. */
+    [data-slot="button"]:has(> svg:only-child) {
+      height: auto !important;
+      width: auto !important;
+    }
+    /* Issue list rows — the wrapping div uses h-9 (36px). Override to 44px. */
+    .group\/row {
+      min-height: 44px !important;
       height: auto !important;
     }
   }
