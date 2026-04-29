@@ -3,6 +3,7 @@
 import React from "react";
 import { User, Palette, Key, Settings, Users, FolderGit2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@multica/ui/components/ui/tabs";
+import { SidebarTrigger } from "@multica/ui/components/ui/sidebar";
 import { useIsMobile } from "@multica/ui/hooks/use-mobile";
 import { useCurrentWorkspace } from "@multica/core/paths";
 import { AccountTab } from "./account-tab";
@@ -64,7 +65,8 @@ export function SettingsPage({ extraAccountTabs }: SettingsPageProps = {}) {
     return (
       <Tabs defaultValue="profile" className="flex flex-1 flex-col min-h-0 gap-0">
         <div className="relative shrink-0 border-b">
-          <div className="overflow-x-auto px-2 pt-2">
+          <div className="overflow-x-auto px-2 pt-2 flex items-center">
+            <SidebarTrigger className="mr-1 shrink-0 md:hidden" />
             <TabsList variant="line" className="w-max">
               {allTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5 px-3">

@@ -41,7 +41,7 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
   const [filter, setFilter] = useState<RuntimeFilter>("mine");
   const [ownerFilter, setOwnerFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState("");
-  const [showList, setShowList] = useState(false);
+  const [showList, setShowList] = useState(true);
 
   const ownerParam = filter === "mine" ? "me" as const : undefined;
   const { data: runtimes = [], isLoading: fetching } = useQuery(runtimeListOptions(wsId, ownerParam));
