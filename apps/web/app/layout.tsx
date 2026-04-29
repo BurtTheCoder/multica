@@ -89,6 +89,11 @@ export const metadata: Metadata = {
     site: "@multica_hq",
     creator: "@multica_hq",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Multica",
+  },
   alternates: {
     canonical: "/",
   },

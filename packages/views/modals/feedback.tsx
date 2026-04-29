@@ -113,7 +113,7 @@ export function FeedbackModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-end px-4 py-3 border-t shrink-0">
           <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
             {mutation.isPending ? "Sending…" : "Send feedback"}
-            <kbd className="ml-1 inline-flex h-4 items-center gap-0.5 rounded border border-border/50 bg-background/30 px-1 font-mono text-[10px] leading-none">
+            <kbd className="ml-1 hidden h-4 items-center gap-0.5 rounded border border-border/50 bg-background/30 px-1 font-mono text-[10px] leading-none md:inline-flex">
               ⌘↵
             </kbd>
           </Button>

@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarInset } from "@multica/ui/components/ui/sidebar
 import { ModalRegistry } from "../modals/registry";
 import { AppSidebar } from "./app-sidebar";
 import { DashboardGuard } from "./dashboard-guard";
+import { MobileCreateFab } from "./mobile-create-fab";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -35,6 +36,7 @@ export function DashboardLayout({
         <SidebarInset className="relative overflow-hidden">
           {children}
           <ModalRegistry />
+          <MobileCreateFab />
           {extra}
         </SidebarInset>
       </SidebarProvider>

@@ -619,6 +619,15 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
             </AppLink>
           )}
 
+          {/* Mobile inline property pills — quick access without opening the Sheet */}
+          {isMobile && (
+            <div className="mt-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <StatusPicker status={issue.status} onUpdate={handleUpdateField} align="start" />
+              <PriorityPicker priority={issue.priority} onUpdate={handleUpdateField} align="start" />
+              <AssigneePicker assigneeType={issue.assignee_type} assigneeId={issue.assignee_id} onUpdate={handleUpdateField} align="start" />
+            </div>
+          )}
+
           <div {...descDropZoneProps} className="relative mt-5 rounded-lg">
             <ContentEditor
               ref={descEditorRef}

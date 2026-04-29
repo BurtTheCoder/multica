@@ -575,7 +575,7 @@ export function AppSidebar({ topSlot, searchSlot, headerClassName, headerStyle }
                   <DraftDot />
                 </span>
                 <span>New Issue</span>
-                <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">C</kbd>
+                <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground md:inline-flex">C</kbd>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

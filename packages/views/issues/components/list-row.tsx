@@ -1,16 +1,19 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppLink } from "../../navigation";
-import type { Issue } from "@multica/core/types";
+import type { Issue, UpdateIssueRequest } from "@multica/core/types";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-store";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useViewStore } from "@multica/core/issues/stores/view-store-context";
 import { projectListOptions } from "@multica/core/projects/queries";
+import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { PriorityIcon } from "./priority-icon";
+import { StatusIcon } from "./status-icon";
+import { StatusPicker } from "./pickers";
 import { ProgressRing } from "./progress-ring";
 import { IssueActionsContextMenu } from "../actions";
 
@@ -44,6 +47,14 @@ export const ListRow = memo(function ListRow({
   });
   const project = issue.project_id ? projects.find((pr) => pr.id === issue.project_id) : undefined;
 
+  const updateIssue = useUpdateIssue();
+  const handleStatusChange = useCallback(
+    (updates: Partial<UpdateIssueRequest>) => {
+      updateIssue.mutate({ id: issue.id, ...updates });
+    },
+    [updateIssue, issue.id],
+  );
+
   const showProject = storeProperties.project && project;
   const showChildProgress = storeProperties.childProgress && childProgress;
   const showAssignee = storeProperties.assignee && issue.assignee_type && issue.assignee_id;
@@ -56,6 +67,15 @@ export const ListRow = memo(function ListRow({
           selected ? "bg-accent/30" : ""
         }`}
       >
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <StatusPicker
+            status={issue.status}
+            onUpdate={handleStatusChange}
+            trigger={<StatusIcon status={issue.status} className="h-3.5 w-3.5" />}
+            align="start"
+          />
+        </div>
         <div className="relative flex shrink-0 items-center justify-center w-4 h-4">
           <PriorityIcon
             priority={issue.priority}

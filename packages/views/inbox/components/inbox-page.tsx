@@ -49,6 +49,90 @@ import { PageHeader } from "../../layout/page-header";
 import { InboxListItem, timeAgo } from "./inbox-list-item";
 import { typeLabels } from "./inbox-detail-label";
 
+// ---------------------------------------------------------------------------
+// SwipeableInboxItem — touch-swipe wrapper for mobile inbox rows
+// ---------------------------------------------------------------------------
+
+function SwipeableInboxItem({
+  children,
+  onSwipeRight,
+  onSwipeLeft,
+}: {
+  children: React.ReactNode;
+  onSwipeRight?: () => void;
+  onSwipeLeft?: () => void;
+}) {
+  const [offsetX, setOffsetX] = useState(0);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const swiping = useRef(false);
+  // Lock direction once the gesture starts: "horizontal" | "vertical" | null
+  const direction = useRef<"horizontal" | "vertical" | null>(null);
+
+  const THRESHOLD = 80;
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Background action indicator */}
+      {offsetX !== 0 && (
+        <div
+          className="absolute inset-0 flex items-center px-4 text-sm font-medium text-white"
+          style={{
+            backgroundColor: offsetX > 0 ? "#10b981" : "#3b82f6",
+            justifyContent: offsetX > 0 ? "flex-start" : "flex-end",
+          }}
+        >
+          {offsetX > 0 ? "Archive" : "Mark read"}
+        </div>
+      )}
+      {/* Swipeable foreground */}
+      <div
+        style={{
+          transform: `translateX(${offsetX}px)`,
+          transition: swiping.current ? "none" : "transform 0.2s ease",
+        }}
+        onTouchStart={(e) => {
+          const touch = e.touches[0];
+          if (!touch) return;
+          startX.current = touch.clientX;
+          startY.current = touch.clientY;
+          swiping.current = true;
+          direction.current = null;
+        }}
+        onTouchMove={(e) => {
+          const touch = e.touches[0];
+          if (!touch) return;
+          const dx = touch.clientX - startX.current;
+          const dy = touch.clientY - startY.current;
+
+          // Lock direction on first meaningful movement
+          if (direction.current === null) {
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            if (absDx < 4 && absDy < 4) return; // too small to decide
+            direction.current = absDx > absDy ? "horizontal" : "vertical";
+          }
+
+          // Only track horizontal swipes
+          if (direction.current === "horizontal") {
+            setOffsetX(dx);
+          }
+        }}
+        onTouchEnd={() => {
+          swiping.current = false;
+          if (offsetX > THRESHOLD && onSwipeRight) onSwipeRight();
+          else if (offsetX < -THRESHOLD && onSwipeLeft) onSwipeLeft();
+          setOffsetX(0);
+          direction.current = null;
+        }}
+        className="relative bg-background"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function InboxPage() {
   const { searchParams, replace } = useNavigation();
   const urlIssue = searchParams.get("issue") ?? "";
@@ -316,12 +400,42 @@ export function InboxPage() {
       );
     }
 
-    // Mobile: full-screen list
+    // Mobile: full-screen list with swipe gestures
+    const mobileListBody = items.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <Inbox className="mb-3 h-8 w-8 text-muted-foreground/50" />
+        <p className="text-sm">No notifications</p>
+      </div>
+    ) : (
+      <div>
+        {items.map((item) => (
+          <SwipeableInboxItem
+            key={item.id}
+            onSwipeRight={() => handleArchive(item.id)}
+            onSwipeLeft={() => {
+              if (!item.read) {
+                markReadMutation.mutate(item.id, {
+                  onError: () => toast.error("Failed to mark as read"),
+                });
+              }
+            }}
+          >
+            <InboxListItem
+              item={item}
+              isSelected={(item.issue_id ?? item.id) === selectedKey}
+              onClick={() => handleSelect(item)}
+              onArchive={() => handleArchive(item.id)}
+            />
+          </SwipeableInboxItem>
+        ))}
+      </div>
+    );
+
     return (
       <div className="flex flex-1 flex-col min-h-0">
         {listHeader}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {listBody}
+          {mobileListBody}
         </div>
       </div>
     );
