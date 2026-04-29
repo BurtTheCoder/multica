@@ -41,6 +41,7 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
   const [filter, setFilter] = useState<RuntimeFilter>("mine");
   const [ownerFilter, setOwnerFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState("");
+  const [showList, setShowList] = useState(false);
 
   const ownerParam = filter === "mine" ? "me" as const : undefined;
   const { data: runtimes = [], isLoading: fetching } = useQuery(runtimeListOptions(wsId, ownerParam));
@@ -62,7 +63,7 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
   const effectiveSelectedId = selectedId && runtimes.some((r) => r.id === selectedId)
     ? selectedId
     : runtimes[0]?.id ?? "";
-  const selected = runtimes.find((r) => r.id === effectiveSelectedId) ?? null;
+  const selected = (isMobile && showList) ? null : runtimes.find((r) => r.id === effectiveSelectedId) ?? null;
 
   if (isLoading || fetching) {
     return (
@@ -104,7 +105,7 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
     <RuntimeList
       runtimes={runtimes}
       selectedId={effectiveSelectedId}
-      onSelect={setSelectedId}
+      onSelect={(id) => { setShowList(false); setSelectedId(id); }}
       filter={filter}
       onFilterChange={setFilter}
       ownerFilter={ownerFilter}
@@ -135,7 +136,7 @@ export default function RuntimesPage({ topSlot, bootstrapping }: RuntimesPagePro
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => setSelectedId("")}
+                onClick={() => setShowList(true)}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
