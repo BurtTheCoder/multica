@@ -51,6 +51,10 @@ const allowedDevOrigins = Array.from(
 
 const nextConfig: NextConfig = {
   ...(process.env.STANDALONE === "true" ? { output: "standalone" as const } : {}),
+  // scripts/web-build.sh builds into a staging directory while `next start`
+  // keeps serving the previous build from .next, then swaps the two. Unset at
+  // runtime, so the server always reads .next.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   transpilePackages: ["@multica/core", "@multica/ui", "@multica/views"],
   allowedDevOrigins,
   images: {

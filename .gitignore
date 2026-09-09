@@ -78,3 +78,7 @@ data/
 # Python (agent tooling)
 __pycache__/
 *.pyc
+
+# Fork deploy: staging build directory used by scripts/web-build.sh
+apps/web/.next-staging/
+apps/web/.next-old/
