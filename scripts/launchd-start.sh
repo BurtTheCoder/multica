@@ -6,14 +6,19 @@ ENV_FILE="$ROOT/.env"
 LOG_DIR="$ROOT/.launchd-logs"
 mkdir -p "$LOG_DIR"
 
-# Prefer the repo-tested Node 22 runtime for Next/React dev server stability.
-# Homebrew currently exposes a newer Node on osx-server; keep it as fallback,
-# but put NVM Node 22 first when available.
+# launchd starts with a minimal PATH. The daemon this script restarts inherits
+# it, and agent CLIs installed under $HOME (bun, opencode, kimi, antigravity)
+# then fail version detection and register as offline. Take the login shell's
+# PATH so the daemon sees exactly what a terminal sees (the tool dirs are
+# exported from .zshrc, hence the interactive flag), then put NVM's Node 22
+# first for the Next/React server.
+LOGIN_PATH="$(/bin/zsh -lic 'echo "$PATH"' 2>/dev/null | tail -1)"
+export PATH="${LOGIN_PATH:-/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
 NODE22_BIN="$(ls -d /Users/orie/.nvm/versions/node/v22.*/bin 2>/dev/null | sort -V | tail -1)"
 if [ -n "$NODE22_BIN" ] && [ -x "$NODE22_BIN/node" ]; then
-  export PATH="/Users/orie/.local/bin:$NODE22_BIN:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  export PATH="/Users/orie/.local/bin:$NODE22_BIN:$PATH"
 else
-  export PATH="/Users/orie/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  export PATH="/Users/orie/.local/bin:$PATH"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
