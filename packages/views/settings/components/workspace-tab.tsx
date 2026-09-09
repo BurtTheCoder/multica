@@ -20,10 +20,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@multica/core/auth";
 import { useLeaveWorkspace, useDeleteWorkspace } from "@multica/core/workspace/mutations";
 import {
+  agentListOptions,
   memberListOptions,
   workspaceKeys,
   workspaceListOptions,
 } from "@multica/core/workspace/queries";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@multica/ui/components/ui/select";
 import { issueKeys } from "@multica/core/issues/queries";
 import { api } from "@multica/core/api";
 import {
@@ -64,6 +72,9 @@ function workspaceDetailsEqual(
   );
 }
 
+/** Select value meaning "no review agent"; stored as null in settings. */
+const REVIEW_AGENT_NONE = "__none__";
+
 export function WorkspaceTab() {
   const { t } = useT("settings");
   const user = useAuthStore((s) => s.user);
@@ -77,6 +88,10 @@ export function WorkspaceTab() {
   const wsId = workspace?.id;
   const { data: members = [], isFetched: membersFetched } = useQuery({
     ...memberListOptions(wsId ?? ""),
+    enabled: !!wsId,
+  });
+  const { data: agents = [] } = useQuery({
+    ...agentListOptions(wsId ?? ""),
     enabled: !!wsId,
   });
   const qc = useQueryClient();
@@ -141,6 +156,7 @@ export function WorkspaceTab() {
     onConfirm: () => Promise<void>;
   } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reviewAgentSaving, setReviewAgentSaving] = useState(false);
 
   const currentMember = members.find((m) => m.user_id === user?.id) ?? null;
   const canManageWorkspace = currentMember?.role === "owner" || currentMember?.role === "admin";
@@ -215,6 +231,49 @@ export function WorkspaceTab() {
     enabled: !!workspace && canManageWorkspace && !!name.trim(),
     isEqual: workspaceDetailsEqual,
   });
+
+  // Review handoff: the server reassigns issues an agent moves into review to
+  // this agent (server/internal/handler/review_agent.go). Stored in the
+  // free-form workspace settings JSON, so it is read and written here as-is.
+  const reviewAgentId =
+    typeof workspace?.settings?.review_agent_id === "string"
+      ? workspace.settings.review_agent_id
+      : "";
+  const reviewAgentItems = useMemo(
+    () => [
+      { value: REVIEW_AGENT_NONE, label: t(($) => $.workspace.review_agent_none) },
+      ...agents
+        .filter((agent) => !agent.archived_at || agent.id === reviewAgentId)
+        .map((agent) => ({ value: agent.id, label: agent.name })),
+    ],
+    [agents, reviewAgentId, t],
+  );
+
+  const handleReviewAgentChange = async (next: string | null) => {
+    if (!workspace || !next) return;
+    const nextId = next === REVIEW_AGENT_NONE ? null : next;
+    if ((nextId ?? "") === reviewAgentId) return;
+    setReviewAgentSaving(true);
+    try {
+      const updated = await api.updateWorkspace(workspace.id, {
+        settings: { ...workspace.settings, review_agent_id: nextId },
+      });
+      qc.setQueryData(workspaceKeys.list(), (old: Workspace[] | undefined) =>
+        old?.map((ws) => (ws.id === updated.id ? updated : ws)),
+      );
+      toast.success(t(($) => $.workspace.toast_saved), {
+        id: "settings-auto-save",
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t(($) => $.workspace.toast_save_failed),
+      );
+    } finally {
+      setReviewAgentSaving(false);
+    }
+  };
 
   const performPrefixSave = async (nextPrefix: string) => {
     if (!workspace) return;
@@ -461,6 +520,34 @@ export function WorkspaceTab() {
                 {t(($) => $.workspace.manage_hint)}
               </div>
             )}
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection title={t(($) => $.workspace.section_automation)}>
+        <SettingsCard>
+          <SettingsRow
+            label={t(($) => $.workspace.review_agent_label)}
+            description={t(($) => $.workspace.review_agent_description)}
+            size="select-wide"
+          >
+            <Select
+              items={reviewAgentItems}
+              value={reviewAgentId || REVIEW_AGENT_NONE}
+              onValueChange={(next) => void handleReviewAgentChange(next)}
+              disabled={!canManageWorkspace || reviewAgentSaving}
+            >
+              <SelectTrigger aria-label={t(($) => $.workspace.review_agent_label)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {reviewAgentItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SettingsRow>
         </SettingsCard>
       </SettingsSection>
 

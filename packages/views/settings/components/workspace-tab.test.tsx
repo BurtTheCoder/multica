@@ -23,9 +23,18 @@ const workspaceRef = vi.hoisted(() => ({
 const membersRef = vi.hoisted(() => ({
   current: [{ user_id: "user-1", role: "owner" as "owner" | "admin" | "member" }],
 }));
+const agentsRef = vi.hoisted(() => ({
+  current: [
+    { id: "agent-1", name: "Reviewer", archived_at: null as string | null },
+    { id: "agent-2", name: "Retired", archived_at: "2026-01-01T00:00:00Z" as string | null },
+  ],
+}));
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: membersRef.current, isFetched: true }),
+  useQuery: (options: { queryKey?: unknown[] }) =>
+    options.queryKey?.[0] === "agents"
+      ? { data: agentsRef.current, isFetched: true }
+      : { data: membersRef.current, isFetched: true },
   useQueryClient: () => ({
     setQueryData: vi.fn(),
     getQueryData: vi.fn(() => []),
@@ -44,6 +53,7 @@ vi.mock("@multica/core/platform", () => ({
 }));
 
 vi.mock("@multica/core/workspace/queries", () => ({
+  agentListOptions: () => ({ queryKey: ["agents"], queryFn: vi.fn() }),
   memberListOptions: () => ({ queryKey: ["members"], queryFn: vi.fn() }),
   workspaceListOptions: () => ({ queryKey: ["workspaces"], queryFn: vi.fn() }),
   workspaceKeys: { list: () => ["workspaces"] },
@@ -131,6 +141,34 @@ describe("WorkspaceTab — automatic updates", () => {
   function setupUser() {
     return userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
   }
+
+  it("persists the review agent into workspace settings", async () => {
+    const user = setupUser();
+    render(<WorkspaceTab />, { wrapper: I18nWrapper });
+
+    await user.click(screen.getByRole("combobox", { name: "Review agent" }));
+    await user.click(await screen.findByRole("option", { name: "Reviewer" }));
+
+    await waitFor(() => {
+      expect(mockUpdateWorkspace).toHaveBeenCalledWith("workspace-1", {
+        settings: { review_agent_id: "agent-1" },
+      });
+    });
+    expect(mockToastSuccess).toHaveBeenCalledWith(
+      "Workspace settings saved",
+      { id: "settings-auto-save" },
+    );
+  });
+
+  it("hides archived agents from the review agent options", async () => {
+    const user = setupUser();
+    render(<WorkspaceTab />, { wrapper: I18nWrapper });
+
+    await user.click(screen.getByRole("combobox", { name: "Review agent" }));
+    await screen.findByRole("option", { name: "Reviewer" });
+
+    expect(screen.queryByRole("option", { name: "Retired" })).toBeNull();
+  });
 
   it("renders the current prefix in the shared input control", () => {
     render(<WorkspaceTab />, { wrapper: I18nWrapper });
