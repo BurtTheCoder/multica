@@ -98,7 +98,13 @@ export function ShortcutKeycaps({
 
   return (
     <span
-      className={cn("inline-flex items-center gap-1", className)}
+      className={cn(
+        "inline-flex items-center gap-1",
+        // A decorative hint names a key combination nobody can press on a
+        // phone; drop it below the tablet breakpoint instead of per call site.
+        decorative && "max-md:hidden",
+        className,
+      )}
       role={decorative ? undefined : "img"}
       aria-label={decorative ? undefined : accessibleLabel}
       aria-hidden={decorative || undefined}

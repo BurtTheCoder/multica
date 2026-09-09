@@ -66,6 +66,9 @@ const sourceSerif = Source_Serif_4({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Let the page extend under the iPhone notch and home indicator so the
+  // safe-area padding in packages/ui/styles/base.css has something to pad.
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#05070b" },

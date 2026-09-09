@@ -352,6 +352,9 @@ html[data-dnd-dragging="true"] * {
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    /* Mobile Safari paints a grey flash on every tap target; the components
+     * already carry their own active states. */
+    -webkit-tap-highlight-color: transparent;
   }
   *::-webkit-scrollbar { width: 6px; height: 6px; }
   *::-webkit-scrollbar-track { background: var(--scrollbar-track); }
@@ -359,6 +362,13 @@ html[data-dnd-dragging="true"] * {
   *::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
   body {
     @apply bg-background text-foreground;
+    /* No double-tap-to-zoom delay on touch, and no rubber-banding the whole
+     * shell when a scroll container hits its end. */
+    touch-action: manipulation;
+    overscroll-behavior: contain;
+    /* viewport-fit=cover (apps/web/app/layout.tsx) lets the page run under
+     * the home indicator; keep bottom-anchored controls above it. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   html {
     @apply font-sans;
@@ -384,6 +394,43 @@ html[data-dnd-dragging="true"] * {
      * visual carrier. Forbidding it would silently flatten every Chinese <em>,
      * every editor italic mark, and every hljs comment to upright. */
     font-synthesis: style;
+  }
+
+  /* Touch targets. Apple and Android both ask for 44px; the desktop-sized
+   * h-7/h-8/h-9 utilities cap most controls well below that. Release the
+   * fixed heights so min-height wins, only where a finger is the pointer. */
+  @media (pointer: coarse) {
+    button,
+    a,
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"],
+    [role="option"],
+    summary {
+      min-height: 44px;
+    }
+    [data-sidebar="menu-button"] {
+      min-height: 44px;
+      height: auto;
+    }
+    [data-sidebar="menu-sub-button"] {
+      min-height: 40px;
+      height: auto;
+    }
+    [role="tab"] {
+      height: auto;
+    }
+    /* Icon-only buttons set both size-* dimensions; release them too. */
+    [data-slot="button"]:has(> svg:only-child) {
+      height: auto;
+      width: auto;
+      min-width: 44px;
+    }
+    /* Issue list rows are h-9 (36px) for density on desktop. */
+    .group\/row {
+      min-height: 44px;
+      height: auto;
+    }
   }
 
   @media (max-width: 767px), (pointer: coarse) {

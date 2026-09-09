@@ -24,6 +24,7 @@ import {
   Waves,
 } from "lucide-react";
 import { Button } from "@multica/ui/components/ui/button";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
 import { Spinner } from "@multica/ui/components/ui/spinner";
 import { Input } from "@multica/ui/components/ui/input";
 import {
@@ -1842,6 +1843,7 @@ export function IssueDisplayControls({
   const [tableGroupMenuOpen, setTableGroupMenuOpen] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const viewMode = useViewStore((s) => s.viewMode);
+  const isMobile = useIsMobile();
   const statusFilters = useViewStore((s) => s.statusFilters);
   const priorityFilters = useViewStore((s) => s.priorityFilters);
   const assigneeFilters = useViewStore((s) => s.assigneeFilters);
@@ -2309,8 +2311,10 @@ export function IssueDisplayControls({
 
         {/* View toggle. If a store has `viewMode === "gantt"` persisted but
             this surface doesn't render Gantt, fall back to "list" so the
-            trigger icon matches what's actually on screen. */}
-        {!hideViewToggle && (
+            trigger icon matches what's actually on screen. Phones always
+            render the list (see useIssueSurfaceController), so the toggle
+            would only offer views that are not on screen there. */}
+        {!hideViewToggle && !isMobile && (
           <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
             <Tooltip>
               <DropdownMenuTrigger

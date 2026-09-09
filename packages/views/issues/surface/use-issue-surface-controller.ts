@@ -15,6 +15,7 @@ import type {
 } from "@multica/core/types";
 import { workspaceWorkingAgentsOptions } from "@multica/core/agents";
 import { useWorkspaceId } from "@multica/core/hooks";
+import { useIsMobile } from "@multica/ui/hooks/use-mobile";
 import { ALL_STATUSES } from "@multica/core/issues/config";
 import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
 import { statusFilterColumns } from "@multica/core/issues";
@@ -242,9 +243,16 @@ export function useIssueSurfaceController({
 
   const allowedModes = useMemo(() => new Set<IssueSurfaceMode>(modes), [modes]);
   const fallbackMode = modes[0] ?? "list";
-  const effectiveViewMode = allowedModes.has(viewMode as IssueSurfaceMode)
-    ? (viewMode as IssueSurfaceMode)
-    : fallbackMode;
+  const isMobile = useIsMobile();
+  // Phones always render the list: a kanban board or a wide table does not
+  // fit a 390px viewport. The persisted choice is left untouched so the
+  // same browser profile on a laptop keeps whichever view it chose.
+  const effectiveViewMode: IssueSurfaceMode =
+    isMobile && allowedModes.has("list")
+      ? "list"
+      : allowedModes.has(viewMode as IssueSurfaceMode)
+        ? (viewMode as IssueSurfaceMode)
+        : fallbackMode;
 
   useEffect(() => {
     if (!allowedModes.has(viewMode as IssueSurfaceMode)) {
