@@ -182,22 +182,25 @@ while true; do
     restart_self "Multica web server exited with status $status"
   fi
 
-  if curl -fsS --max-time 2 "http://127.0.0.1:${PORT:-8080}/health" >/dev/null 2>&1; then
+  if curl -fsS --max-time 10 "http://127.0.0.1:${PORT:-8080}/health" >/dev/null 2>&1; then
     api_failures=0
   else
     api_failures=$((api_failures + 1))
   fi
 
-  if curl -fsSI --max-time 2 "http://127.0.0.1:${FRONTEND_PORT}/login" >/dev/null 2>&1; then
+  # Generous timeout and threshold: the Next dev server compiles on demand
+  # and a test run on the same machine can stall it for well over a minute
+  # without anything being wrong.
+  if curl -fsSI --max-time 15 "http://127.0.0.1:${FRONTEND_PORT}/login" >/dev/null 2>&1; then
     web_failures=0
   else
     web_failures=$((web_failures + 1))
   fi
 
-  if [ "$api_failures" -ge 5 ]; then
+  if [ "$api_failures" -ge 6 ]; then
     restart_self "Multica API health failed $api_failures consecutive checks"
   fi
-  if [ "$web_failures" -ge 5 ]; then
+  if [ "$web_failures" -ge 12 ]; then
     restart_self "Multica web health failed $web_failures consecutive checks"
   fi
 
@@ -206,5 +209,5 @@ while true; do
     rotate_logs
   fi
 
-  sleep 2
+  sleep 5
 done
