@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getApi } from "../api";
+import { ApiError, getApi } from "../api";
 import { useAuthStore } from "../auth";
 import {
   captureSignupSource,
@@ -92,7 +92,9 @@ export function AuthInitializer({
           qc.setQueryData(workspaceKeys.list(), wsList);
         })
         .catch((err) => {
-          logger.error("cookie auth init failed", err);
+          if (!(err instanceof ApiError && err.status === 401)) {
+            logger.error("cookie auth init failed", err);
+          }
           onAuthFailure();
         });
       return;
@@ -116,7 +118,9 @@ export function AuthInitializer({
         qc.setQueryData(workspaceKeys.list(), wsList);
       })
       .catch((err) => {
-        logger.error("auth init failed", err);
+        if (!(err instanceof ApiError && err.status === 401)) {
+          logger.error("auth init failed", err);
+        }
         api.setToken(null);
         setCurrentWorkspace(null, null);
         storage.removeItem("multica_token");

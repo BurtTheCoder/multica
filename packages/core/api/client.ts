@@ -239,7 +239,10 @@ export class ApiClient {
     if (!res.ok) {
       if (res.status === 401) this.handleUnauthorized();
       const message = await this.parseErrorMessage(res, `API error: ${res.status} ${res.statusText}`);
-      const logLevel = res.status === 404 ? "warn" : "error";
+      // 401 is part of normal app startup on public routes: the web shell probes
+      // /api/me to discover whether an HttpOnly session exists. Logging that as
+      // console.error makes Next dev treat a guest login page as a red error.
+      const logLevel = res.status === 401 || res.status === 404 ? "warn" : "error";
       this.logger[logLevel](`← ${res.status} ${path}`, { rid, duration: `${Date.now() - start}ms`, error: message });
       throw new ApiError(message, res.status, res.statusText);
     }

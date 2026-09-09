@@ -47,18 +47,15 @@ export function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // --- Root path: redirect logged-in users to their last workspace ---
+  // --- Root path: let the client verify auth before routing ---
   if (pathname === "/") {
-    if (!hasSession) return NextResponse.next();
-
-    if (lastSlug) {
-      const url = req.nextUrl.clone();
-      url.pathname = `/${lastSlug}/issues`;
-      return NextResponse.redirect(url);
-    }
-
-    // No last_workspace_slug cookie → let landing page pick the first workspace
-    // client-side (features/landing/components/redirect-if-authenticated.tsx).
+    // `multica_logged_in` is intentionally a non-HttpOnly hint cookie used only
+    // by the web client. It can outlive or disagree with the real HttpOnly API
+    // session, especially across localhost ⇄ Tailscale host changes. Redirecting
+    // from the proxy on that hint can strand mobile users on /{slug}/issues with
+    // only the loading mark visible while auth/workspace state never resolves.
+    // Serve `/` and let RedirectIfAuthenticated call the API, then route only
+    // after the session is verified.
     return NextResponse.next();
   }
 
