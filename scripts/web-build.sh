@@ -25,5 +25,8 @@ set -a
 . "$ROOT/.env"
 set +a
 CI=true pnpm --filter @multica/web build
+# next build rewrites the tracked next-env.d.ts; put it back so a deploy
+# build never leaves the checkout dirty.
+git checkout -q -- apps/web/next-env.d.ts 2>/dev/null || true
 echo "$HEAD_SHA" > "$MARKER"
 echo "web build done"

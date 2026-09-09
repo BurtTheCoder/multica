@@ -241,6 +241,11 @@ writes the literal `done` key.
   later re-trigger confirms the overall goal is met.
 - **`in_review`** is an accepted issue status. Some workflows use it while a PR
   is open and awaiting review; moving to it is an explicit mutation.
+- **Review handoff (this deployment):** when a workspace has a review agent set
+  in Settings > General > Automation and an AGENT moves an issue into the
+  `in_review` category, the platform reassigns the issue to that review agent
+  and starts its run. Do not assign a reviewer yourself; write `in_review` and
+  stop. A member moving the issue, or the review agent itself, triggers nothing.
 - **`done`** on a child issue posts a system comment on its parent. If a PR
   carries close intent (`Closes MUL-XXXX`), it advances the issue to `done`
   itself on merge — you do not also need to flip it manually.

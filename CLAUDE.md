@@ -257,3 +257,12 @@ Do not claim verification passed unless you ran it. If you skip checks because t
 
 - All queries filter by `workspace_id`; membership gates access; `X-Workspace-ID` selects the workspace.
 - Issue assignees are polymorphic: `assignee_type` plus `assignee_id` can reference a member or an agent.
+
+## Fork Notes
+
+This checkout is Orie's fork of multica-ai/multica (branch `fork/main`), deployed from source under launchd and served over Tailscale. Read `.claude/HANDOFF.md` before touching deployment, the database, or running Go DB tests. Fork-only behavior on top of upstream:
+
+- Review handoff: `server/internal/handler/review_agent.go` reassigns issues an agent moves into `in_review` to the workspace's review agent (Settings > General > Automation). Keep `builtin_skills/multica-platform/references/issues.md` in sync when it changes.
+- Phones always render the issue list; coarse-pointer touch targets live in `packages/ui/styles/base.css`.
+- The web app is served from a production build by `scripts/launchd-start.sh` via `scripts/web-build.sh`; `make up` / `next dev` are not how the live instance runs.
+- Keep fork changes small and additive so upstream merges stay cheap.
