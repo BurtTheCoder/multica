@@ -104,6 +104,17 @@ go run ./cmd/migrate up
 
 cd "$ROOT"
 
+# Next spawns its own server subprocess, so killing our direct children can
+# leave a listener behind that makes the next start fail with EADDRINUSE.
+# Free the ports explicitly, both on the way out and before starting.
+free_ports() {
+  local pids
+  pids="$(lsof -nP -t -iTCP:"${PORT:-8080}" -sTCP:LISTEN 2>/dev/null; lsof -nP -t -iTCP:"${FRONTEND_PORT}" -sTCP:LISTEN 2>/dev/null)"
+  [ -n "$pids" ] || return 0
+  echo "$pids" | sort -u | xargs kill 2>/dev/null || true
+  sleep 1
+}
+
 cleanup() {
   for pid in "${SERVER_PID:-}" "${WEB_PID:-}" "${DAEMON_BOOT_PID:-}"; do
     if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
@@ -111,6 +122,7 @@ cleanup() {
       kill "$pid" 2>/dev/null || true
     fi
   done
+  free_ports
 }
 trap cleanup EXIT INT TERM
 
@@ -127,6 +139,8 @@ restart_self() {
 }
 
 echo "[$(ts)] starting Multica stack with node=$(command -v node 2>/dev/null || echo missing) $(node -v 2>/dev/null || true), pnpm=$(command -v pnpm 2>/dev/null || echo missing)" >&2
+
+free_ports
 
 (cd "$ROOT/server" && go run ./cmd/server >>"$LOG_DIR/server.log" 2>&1) &
 SERVER_PID=$!
