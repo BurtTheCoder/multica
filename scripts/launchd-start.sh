@@ -145,8 +145,21 @@ free_ports
 (cd "$ROOT/server" && go run ./cmd/server >>"$LOG_DIR/server.log" 2>&1) &
 SERVER_PID=$!
 
-pnpm dev:web >>"$LOG_DIR/web.log" 2>&1 &
-WEB_PID=$!
+# Serve a production build. `next dev` compiles every route on first visit
+# and re-does it after each restart, which is why page changes felt slow over
+# Tailscale. Set MULTICA_WEB_DEV=1 in .env to get hot reload back while
+# editing web code; run scripts/web-build.sh after changes otherwise.
+if [ "${MULTICA_WEB_DEV:-}" = "1" ]; then
+  pnpm dev:web >>"$LOG_DIR/web.log" 2>&1 &
+  WEB_PID=$!
+else
+  if ! "$ROOT/scripts/web-build.sh" >>"$LOG_DIR/web-build.log" 2>&1; then
+    echo "[$(ts)] web build failed; see $LOG_DIR/web-build.log" >&2
+    exit 1
+  fi
+  (cd "$ROOT/apps/web" && exec pnpm exec next start --port "$FRONTEND_PORT" >>"$LOG_DIR/web.log" 2>&1) &
+  WEB_PID=$!
+fi
 
 # Start/restart local Multica daemon after the API is healthy. Do not fail the app if daemon auth needs attention.
 (
